@@ -1,0 +1,31 @@
+#### Run BugBase analysis ####
+#You should be in within the main BugBase_Manuscript directory to run these commands.
+
+run.bugbase.r -i data/HMP_OTUs.biom -m HMP_Map.txt -c HMPBODYSUBSITE -o BB_HMP
+run.bugbase.r -i data/Yats_Adult_OTUs.biom -m data/Yats_Adult_Map.txt -c COUNTRY -o BB_Yats
+run.bugbase.r -i data/Yellow_Stone_OTUs.biom -m data/Yellow_Stone_Map.txt -c temp -o BB_Yellow -z
+run.bugbase.r -i data/Soil_OTUs.biom -m data/Soil_Map.txt -c ph -o BB_Soil -z
+run.bugbase.r -i data/Vagina_OTUs.biom -m data/Vagina_Map.txt -c Nugent_score_categoryb -o BB_Vagina
+
+#### Make Figure 2  plots ####
+source("bin/Figure_2.r")
+
+#### Make Figure 3 & Supplemental Figure X ####
+
+#Create custom trait tables for pathways of interest
+make.user.table.r -i data/custom_pathways
+
+#Run BugBase predicitons with these tables
+run.bugbase.r -u data/custom_pathways/Custom_BugBase_Traits.txt -i data/HMP_OTUs.biom -m data/HMP_Map.txt -c HMPBODYSUBSITE -o Fig_3_Pathways
+
+#Make BugBase predictions for all Kegg level 3 modules
+#This take about 1.5 hours
+run.bugbase.r -i data/HMP_OTUs.biom -k -x -o BB_HMP_Kegg
+
+#Analyze and plot
+source("bin/Figure_3_pathways.r")
+source("bin/Figure_3_Kegg1.r")
+source("bin/Figure_3_Kegg2.r")
+
+
+
