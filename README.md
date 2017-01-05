@@ -2,7 +2,8 @@
 
 ### Requirements:
 * BugBase installed and able to run test dataset
-* This git repository 
+* This git repository
+* Graphlan installed to generate Figure 4 
 <br><br>
 
 ### Data Files:
@@ -55,5 +56,5 @@ Ravel, J. et al. Vaginal microbiome of reproductive-age women. Proc. Natl. Acad.
 
 To complete the BugBase analysis for all the work presented in the publication, you can run the commands listed in the `BugBase_Workflow.txt` file.
 
-These commands should be run from within the BugBase_Manuscript directory.
+These commands should be run from within the BugBase_Manuscript main directory.
 
