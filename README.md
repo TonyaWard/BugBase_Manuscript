@@ -3,6 +3,7 @@
 ### Requirements:
 * BugBase installed and able to run test dataset
 * This git repository
+# R packages required for BugBase, plus 1 additional package "cowplot"
 * Graphlan installed to generate Figure 4 
 <br><br>
 
