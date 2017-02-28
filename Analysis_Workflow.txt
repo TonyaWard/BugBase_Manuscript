@@ -1,11 +1,12 @@
 #### Run BugBase analysis ####
 # You should be in within the main BugBase_Manuscript directory to run these commands.
+# You need to have BugBase installed on your computer.
 
 
 
 #### Primary BugBase outputs ####
 #This will create the analysis for Supplemental figures 2-9 and 11, and the files needed for the other Figures
-run.bugbase.r -i data/HMP_OTUs.biom -m HMP_Map.txt -c HMPBODYSUBSITE -o BB_HMP
+run.bugbase.r -i data/HMP_OTUs.biom -m data/HMP_Map.txt -c HMPBODYSUBSITE -o BB_HMP
 run.bugbase.r -i data/Yats_Adult_OTUs.biom -m data/Yats_Adult_Map.txt -c COUNTRY -o BB_Yats
 run.bugbase.r -i data/Yellow_Stone_OTUs.biom -m data/Yellow_Stone_Map.txt -c temp -o BB_Yellow -z
 run.bugbase.r -i data/Soil_OTUs.biom -m data/Soil_Map.txt -c ph -o BB_Soil -z
@@ -14,7 +15,7 @@ run.bugbase.r -i data/Vagina_OTUs.biom -m data/Vagina_Map.txt -c Nugent_score_ca
 
 
 #### Make Figure 2 ####
-# This will compile the plots in formats found in the manuscript, it uses the exact output from BugBase
+# This will compile the plots in formats found in the manuscript, it uses the exact output from BugBase generated above
 Rscript bin/Figure_2.r
 
 

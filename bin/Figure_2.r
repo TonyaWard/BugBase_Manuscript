@@ -1,4 +1,13 @@
 #### Create Images for Figure 2 ####
+# Set colors and load beeswarm library to make plots
+library('RColorBrewer')
+library('beeswarm')
+library('reshape')
+library('plyr')
+library('ggplot2')
+
+#make colors
+cols <- sprintf('%s90',brewer.pal(9,'Set1'))
 
 #Load HMP tables
 HMP <- read.table("BB_HMP/predicted_phenotypes/predictions.txt", 
@@ -13,6 +22,18 @@ HMP_Map <- read.table("data/HMP_Map.txt",
 				row=1,
 				check=F,
 				comment='')
+HMP_OTUs <- read.table("BB_HMP/normalized_otus/16s_normalized_otus.txt", 
+				sep='\t', 
+				head=T, 
+				row=1, 
+				check=F, 
+				comment="")
+HMP_Contributing <- read.table("BB_HMP/otu_contributions/contributing_otus.txt", 
+                       sep='\t', 
+                       head=T, 
+                       row=1, 
+                       check=F, 
+                       comment="")
 
 #Keep only samples in map and OTU, order the samples
 intersect_btwn <- intersect(rownames(HMP_Map),rownames(HMP))
@@ -27,8 +48,13 @@ groups <- strsplit(groups, ",")[[1]]
 ix.keep <- hmp_map[,"HMPBODYSUBSITE"] %in% groups
 hmp_map <- droplevels(as.data.frame(hmp_map[ix.keep,]))
 hmp <- as.data.frame(hmp[ix.keep,])
-colnames(hmp) <- colnames(HMP)
+colnames(hmp) <- colnames(HMP[ix.keep,])
 hmp_map[,"HMPBODYSUBSITE"] <- factor(hmp_map[,"HMPBODYSUBSITE"], levels = c(groups))
+
+#Run processing needed for OTU contribution plots (this is the same code that BugBase runs)
+traits_hmp <- c("Anaerobic", "Forms_Biofilms","Contains_Mobile_Elements", "Pathogenic")
+source("bin/otu.plots.fig2.r")
+otu_plots <- otu.plots.fig2(traits_hmp, HMP_OTUs, HMP_Contributing, hmp_map, "data/97_otu_taxonomy.txt.gz")
 
 # Load Yats data
 GG <- read.table("BB_Yats/predicted_phenotypes/predictions.txt", 
@@ -97,16 +123,33 @@ soil_ph <- droplevels(as.data.frame(Soil_PH[intersect_btwn,]))
 colnames(soil_ph) <- colnames(Soil_PH)
 soil_map <- soil_map[rownames(soil_ph),]
 
+#Load Bacterial Vaginosis data
+Vagina <- read.table("BB_Vagina/predicted_phenotypes/predictions.txt", 
+				sep='\t', 
+				head=T, 
+				row=1, 
+				check=F, 
+				comment="")
+Vagina_Map <- read.table("data/Vagina_Map.txt",
+				sep='\t',
+				head=T,
+				row=1,
+				check=F,
+				comment='')
+intersect_btwn <- intersect(rownames(Vagina_Map),rownames(Vagina))
+vagina_map <- Vagina_Map[intersect_btwn,]
+vagina <- droplevels(as.data.frame(Vagina[intersect_btwn,]))
+colnames(vagina) <- colnames(Vagina)
+vagina_map <- vagina_map[rownames(vagina),]
+
 # Make the linear models.  This is exactly how it is done in BugBase itself
 lm.yellow.aer <- lm(yellow_stone[,"Aerobic"] ~ yellow_map[,"temp"])
 lm.yellow.fa <- lm(yellow_stone[,"Facultatively_Anaerobic"] ~ yellow_map[,"temp"])
 lm.soil.aer <- lm(soil_ph[,"Aerobic"] ~ soil_map[,"ph"])
 lm.soil.st <- lm(soil_ph[,"Stress_Tolerant"] ~ soil_map[,"ph"])
 
-# Set colors and load beeswarm library to make plots
-library('RColorBrewer')
-library('beeswarm')
-cols <- sprintf('%s90',brewer.pal(9,'Set1'))
+
+#Set colors
 Pal <- colorRampPalette(c(cols[2],cols[1]))
 soil_map$Col <- cols[1]
 yellow_map$Col <-  cols[2]
@@ -129,18 +172,21 @@ beeswarm(hmp[,"Forms_Biofilms"] ~ hmp_map[,"HMPBODYSUBSITE"],
 bxplot(hmp[,"Forms_Biofilms"] ~ hmp_map[,"HMPBODYSUBSITE"], add=TRUE, lwd=0.75)
 title(main="Forms Biofilms", cex.main=1.0, line=0.5)
 
-beeswarm(gg[,"Aerobic"] ~ gg_map[,"COUNTRY"],
-			corral='random', cex.axis=1.0, tck=-.05, pch=16, col=cols, xlab='',
-			ylab='', cex=1.0, cex.lab=1.0, las=2, ylim=c(0,0.2))
-bxplot(gg[,"Aerobic"] ~ gg_map[,"COUNTRY"], add=TRUE, lwd=0.75)
-title(ylab = "Relative Abundance", line = 3, cex.lab = 1)
+plot(yellow_stone[,"Aerobic"] ~ yellow_map[,"temp"],
+     col = yellow_map$Col, tck=-.05, pch=16,cex=1.0, xaxt='n', xlab='',
+     ylab='Relative Abundance', cex.lab=1.0, cex.axis=1.0, las=1, ylim=c(0,1))
+abline(lm.yellow.aer, lty=2, ylim=c(0,1))
+axis(1, cex.axis=1.0, padj=-.095)
+title(xlab="Temperature", cex.lab=1.0, line=2)
 title(main="Aerobic", cex.main=1.0, line=0.5)
 
-beeswarm(gg[,"Facultatively_Anaerobic"] ~ gg_map[,"COUNTRY"],
-			corral='random', cex.axis=1.0, tck=-.05, pch=16, col=cols, xlab='',
-			ylab='', cex=1.0, cex.lab=1.0, las=2, ylim=c(0,0.2))
-bxplot(gg[,"Facultatively_Anaerobic"] ~ gg_map[,"COUNTRY"], add=TRUE, lwd=0.75)
-title(main="Facultative Anaerobic", cex.main=1.0, line=0.5)
+plot(yellow_stone[,"Facultatively_Anaerobic"] ~ yellow_map[,"temp"],
+     col = yellow_map$Col, tck=-.05,pch=16, cex=1.0, xaxt='n', 
+     xlab='', ylab='', cex.lab=1.0, cex.axis=1.0,las=1, ylim=c(0,1))
+abline(lm.yellow.fa, lty=2, ylim=c(0,1))
+axis(1, cex.axis=1.0, padj=-.095)
+title(xlab="Temperature", cex.lab=1.0, line=2)
+title(main="Facultative Aerobic", cex.main=1.0, line=0.5)
 
 beeswarm(hmp[,"Contains_Mobile_Elements"] ~ hmp_map[,"HMPBODYSUBSITE"],
 			corral='random',ylim=c(0,1), cex.axis=1.0, tck=-.05, pch=16, col=cols, 
@@ -155,48 +201,68 @@ beeswarm(hmp[,"Pathogenic"] ~ hmp_map[,"HMPBODYSUBSITE"],
 bxplot(hmp[,"Pathogenic"] ~ hmp_map[,"HMPBODYSUBSITE"], add=TRUE, lwd=0.75)
 title(main="Pathogenic", cex.main=1.0, line=0.5)
 
-beeswarm(gg[,"Gram_Negative"] ~ gg_map[,"COUNTRY"],
-			corral='random', cex.axis=1.0,tck=-.05, pch=16,col=cols, xlab='',
-			ylab='', cex=1.0, cex.lab=1.0, las=2, ylim=c(0,1))
-bxplot(gg[,"Gram_Negative"] ~ gg_map[,"COUNTRY"], add=TRUE, lwd=0.75)
-title(ylab = "Relative Abundance", line = 3, cex.lab = 1.0)
-title(main="Gram Negative", cex.main=1.0, line=0.5)
-
-beeswarm(gg[,"Pathogenic"] ~ gg_map[,"COUNTRY"],
-			corral='random', cex.axis=1.0, tck=-.05, pch=16, col=cols, xlab='', 
-			ylab='', cex=1.0, cex.lab=1.0, las=2, ylim=c(0,1))
-bxplot(gg[,"Pathogenic"] ~ gg_map[,"COUNTRY"], add=TRUE, lwd=0.75)
-title(main="Pathogenic", cex.main=1.0, line=0.5)
-
-plot(yellow_stone[,"Aerobic"] ~ yellow_map[,"temp"],
-			col = yellow_map$Col, tck=-.05, pch=16,cex=1.0, xaxt='n', xlab='',
-			ylab='Relative Abundance', cex.lab=1.0, cex.axis=1.0, las=1, ylim=c(0,1))
-abline(lm.yellow.aer, lty=2, ylim=c(0,1))
-axis(1, cex.axis=1.0, padj=-.095)
-title(xlab="Temperature", cex.lab=1.0, line=2)
-title(main="Aerobic", cex.main=1.0, line=0.5)
-
-plot(yellow_stone[,"Facultatively_Anaerobic"] ~ yellow_map[,"temp"],
-			col = yellow_map$Col, tck=-.05,pch=16, cex=1.0, xaxt='n', 
-			xlab='', ylab='', cex.lab=1.0, cex.axis=1.0,las=1, ylim=c(0,1))
-abline(lm.yellow.fa, lty=2, ylim=c(0,1))
-axis(1, cex.axis=1.0, padj=-.095)
-title(xlab="Temperature", cex.lab=1.0, line=2)
-title(main="Facultative Aerobic", cex.main=1.0, line=0.5)
-
 plot(soil_ph[,"Aerobic"] ~ soil_map[,"ph"],
-			col = soil_map$Col, tck=-.05, pch=16, cex=1.0, xaxt='n', xlab='',
-			ylab='Relative Abundance', cex.lab=1.0, cex.axis=1.0,las=1, ylim=c(0.2,1))
+     col = soil_map$Col, tck=-.05, pch=16, cex=1.0, xaxt='n', xlab='',
+     ylab='Relative Abundance', cex.lab=1.0, cex.axis=1.0,las=1, ylim=c(0.2,1))
 abline(lm.soil.aer, lty=2, ylim=c(0.2,1))
 axis(1, cex.axis=1.0, padj=-.095)
 title(xlab="pH", cex.lab=1.0, line=2)
 title(main="Aerobic", cex.main=1.0, line=0.5)
 
 plot(soil_ph[,"Stress_Tolerant"] ~ soil_map[,"ph"],
-		col = soil_map$Col, tck=-.05,pch=16, cex=1.0, xaxt='n', xlab='', 
-		ylab='', cex.lab=1.0, cex.axis=1.0,las=1, ylim=c(0.2,1))
+     col = soil_map$Col, tck=-.05,pch=16, cex=1.0, xaxt='n', xlab='', 
+     ylab='', cex.lab=1.0, cex.axis=1.0,las=1, ylim=c(0.2,1))
 abline(lm.soil.st, lty=2, ylim=c(0.2,1))
 axis(1, cex.axis=1.0, padj=-.08)
 title(xlab="pH", cex.lab=1.0, line=2)
 title(main="Stress_Tolerant", cex.main=1.0, line=0.5)
+
+beeswarm(vagina[,"Anaerobic"] ~ vagina_map[,"Nugent_score_categoryb"],
+         corral='random',ylim=c(0,1), cex.axis=1.0, tck=-.05, pch=16, col=cols, 
+         xlab='', ylab='', cex=1.0, cex.lab=1.0, las=2)
+bxplot(vagina[,"Anaerobic"] ~ vagina_map[,"Nugent_score_categoryb"], add=TRUE, lwd=0.75)
+title(ylab = "Relative Abundance", line = 3, cex.lab = 1)
+title(main="Anaerobic", cex.main=1.0, line=0.5)
+
+beeswarm(vagina[,"Gram_Negative"] ~ vagina_map[,"Nugent_score_categoryb"],
+         corral='random',ylim=c(0,1), cex.axis=1.0, tck=-.05, pch=16, col=cols, 
+         xlab='', ylab='', cex=1.0, cex.lab=1.0, las=2)
+bxplot(vagina[,"Gram_Negative"] ~ vagina_map[,"Nugent_score_categoryb"], add=TRUE, lwd=0.75)
+title(main="Gram Negative", cex.main=1.0, line=0.5)
+
+beeswarm(gg[,"Aerobic"] ~ gg_map[,"COUNTRY"],
+         corral='random', cex.axis=1.0, tck=-.05, pch=16, col=cols, xlab='',
+         ylab='', cex=1.0, cex.lab=1.0, las=2, ylim=c(0,0.2))
+bxplot(gg[,"Aerobic"] ~ gg_map[,"COUNTRY"], add=TRUE, lwd=0.75)
+title(ylab = "Relative Abundance", line = 3, cex.lab = 1)
+title(main="Aerobic", cex.main=1.0, line=0.5)
+
+beeswarm(gg[,"Facultatively_Anaerobic"] ~ gg_map[,"COUNTRY"],
+         corral='random', cex.axis=1.0, tck=-.05, pch=16, col=cols, xlab='',
+         ylab='', cex=1.0, cex.lab=1.0, las=2, ylim=c(0,0.2))
+bxplot(gg[,"Facultatively_Anaerobic"] ~ gg_map[,"COUNTRY"], add=TRUE, lwd=0.75)
+title(main="Facultative Anaerobic", cex.main=1.0, line=0.5)
+
+
+# beeswarm(gg[,"Gram_Negative"] ~ gg_map[,"COUNTRY"],
+# 			corral='random', cex.axis=1.0,tck=-.05, pch=16,col=cols, xlab='',
+# 			ylab='', cex=1.0, cex.lab=1.0, las=2, ylim=c(0,1))
+# bxplot(gg[,"Gram_Negative"] ~ gg_map[,"COUNTRY"], add=TRUE, lwd=0.75)
+# title(ylab = "Relative Abundance", line = 3, cex.lab = 1.0)
+# title(main="Gram Negative", cex.main=1.0, line=0.5)
+# 
+# beeswarm(gg[,"Pathogenic"] ~ gg_map[,"COUNTRY"],
+# 			corral='random', cex.axis=1.0, tck=-.05, pch=16, col=cols, xlab='', 
+# 			ylab='', cex=1.0, cex.lab=1.0, las=2, ylim=c(0,1))
+# bxplot(gg[,"Pathogenic"] ~ gg_map[,"COUNTRY"], add=TRUE, lwd=0.75)
+# title(main="Pathogenic", cex.main=1.0, line=0.5)
 dev.off()
+
+library(cowplot)
+
+pdf("Figure_2_OTUs.pdf", width=4, height=4, useDingbats=FALSE)
+plot_grid(otu_plots[["Anaerobic"]], otu_plots[["Forms_Biofilms"]],otu_plots[["Contains_Mobile_Elements"]],otu_plots[["Pathogenic"]], nrow=2, ncol=2)
+dev.off()
+
+
+
